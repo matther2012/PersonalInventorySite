@@ -1,4 +1,5 @@
 from peewee import *
+import flask.ext.whooshalchemy
 
 db = SqliteDatabase('Inventory.db')
 
@@ -8,6 +9,9 @@ class BaseModel(Model):
 		database = db
 
 class Device(Model):
+
+	__searchable__ = ['serialNumber', 'typeCategory', 'description', 'issues', 'photo', 'state']
+
 	idNumber = IntegerField()
 	serialNumber = CharField()
 	typeCategory = CharField()

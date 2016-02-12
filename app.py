@@ -13,6 +13,10 @@ import os.path
 import models
 #import adLDAP
 
+import flask.ext.whooshalchemy
+
+
+
 # Other
 #from datetime import date
 
@@ -93,10 +97,38 @@ def logout():
 	session.pop('displayName', None)
 	return redirect(url_for('index'))
 
-@app.route('/searchResults')
+@app.route('/search', methods=['POST'])
 def search():
-	if request.method = 'POST':
+	if request.method == 'POST':
+		search = request.form['searchField']
 
+	return redirect(url_for('search_results', search=search))
+
+
+
+@app.route('/search_results/<search>')
+def search_results(search):
+	#query = models.Device.query.whoosh_search(search)
+
+	query = models.Device.select(models.Device.serialNumber,
+								 models.Device.typeCategory,
+								 models.Device.description,
+								 models.Device.issues,
+								 models.Device.state
+								 ).where(
+								 (models.Device.serialNumber ** search) |
+								 (models.Device.typeCategory ** search) |
+								 (models.Device.description ** search) |
+								 (models.Device.issues ** search) |
+								 (models.Device.state ** search)
+								 ).order_by(models.Device.serialNumber)
+
+	types = models.getDeviceTypes()
+	return render_template('searchResults.html',
+			query=query,
+			types=types,
+			logoutURL=url_for('logout')
+		)
 
 # ~~~~~~~~~~~~~~~~ Start page ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -114,7 +146,7 @@ if __name__ == '__main__':
 
 	models.Device.create(
 		idNumber = 3,
-		serialNumber = 'LCDI-0011',
+		serialNumber = 'LCDI-0111',
 		typeCategory = 'Tablet',
 		description = 'This is a phone This is a phone This is a phone This is a phone',
 		issues = 'None of note',
