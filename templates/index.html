@@ -1,174 +1,24 @@
-{% extends "base2.html" %}
+{% extends "baseViewItemTable.html" %}
 
 {%block title%}
-Inventory
+	Inventory
 {%endblock%}
 
-{% block content %}
+{% block header %}
+	<h2 style="margin-left: 20px;">
+		Welcome back {{ name }}
+	</h2>
+	<p class="lead" style="margin-left: 20px;">
+		<span class='text-info'>
+			There are currently {{ totalItems }} items in inventory.
+		</span>
+	</p>
+{% endblock %}
 
-<div id="page-wrapper" style="padding-top: 27px;">
-    <div class="row">
-        <div class="col-lg-12">
-          <div class="jumbotron">
-            <h2 style="margin-left: 20px;">Welcome back {{ name }} </h2>
-            <p class="lead" style="margin-left: 20px;">
-              <span class='text-info'>There are currently {{ totalItems }} items in inventory and currently signed out</span>
-            </p>
-          </div>
-        </div>
-        <!-- /.col-lg-12 -->
-    </div>
-    <!-- /.row -->
+{% block tableHeader %}
+	All Items
+{% endblock %}
 
-    <div class="row">
-      <div class="col-lg-12">
-          <div class="panel panel-primary">
-              <div class="panel-heading">
-                  All Items
-              </div>
-              <!-- /.panel-heading -->
-              <div class="panel-body">
-                  <div class="dataTable_wrapper">
-                      <table width="100%" class="table table-striped table-bordered table-hover" id="dataTables-example">
-                        <thead>
-                          <tr>
-                              <th>Serial Number</th>
-                              <th>Type</th>
-                              <th>Description</th>
-                              <th>Use</th>
-                              <th>Out To</th>
-                              <th>Date Out</th>
-                          </tr>
-                        </thead>
-                        <tbody>
+{% block modals %}{% endblock %}
 
-                          {% for q in query %}
-                            <tr>
-                              <td><a href="{{ url_for('viewItem', serial=q.serialNumber) }}">{{ q.serialNumber }}</a></td>
-                              <td>{{ q.typeCategory }}</td>
-                              <td>{{ q.description }}</td>
-                              <td>{{ q.use }}</td>
-                              <td>{{ q.studentName }}</td>
-                              <td>{{ q.dateOut}}</td>
-                            </tr>
-                          {% endfor %}
-
-                        </tbody>
-                      </table>
-                    </div>
-                  <!-- /.table-responsive -->
-                  <div class="well">
-                      <h4>DataTables Usage Information</h4>
-                      <p>DataTables is a very flexible, advanced tables plugin for jQuery. In SB Admin, we are using a specialized version of DataTables built for Bootstrap 3. We have also customized the table headings to use Font Awesome icons in place of images. For complete documentation on DataTables, visit their website at <a target="_blank" href="https://datatables.net/">https://datatables.net/</a>.</p>
-                      <a class="btn btn-default btn-lg btn-block" target="_blank" href="https://datatables.net/">View DataTables Documentation</a>
-                  </div>
-              </div>
-              <!-- /.panel-body -->
-          </div>
-          <!-- /.panel -->
-      </div>
-      <!-- /.col-lg-12 -->
-  </div>
-  <!-- /.row -->
-  
-  <!-- add item modal -->
-  <div class="modal fade" id="addItemModal" tabindex="-1" role="dialog" 
-     aria-labelledby="myModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <!-- Modal Header -->
-            <div class="modal-header">
-                <button type="button" class="close" 
-                   data-dismiss="modal">
-                       <span aria-hidden="true">&times;</span>
-                       <span class="sr-only">Close</span>
-                </button>
-                <h4 class="modal-title" id="myModalLabel">
-                    Add Item
-                </h4>
-            </div>
-            
-            <!-- Modal Body -->
-            <div class="modal-body">
-                
-                <form method="post" enctype="multipart/form-data">
-                  <div class="form-group">
-                    <label for="lcdi_serial">LCDI Serial Number</label>
-                      <input type="text" class="form-control"
-                      name="lcdi_serial" value="LCDI-"/>
-                  </div>
-                  <div class="form-group">
-                    <label for="device_serial">Device Serial Number</label>
-                      <input type="text" class="form-control"
-                          name="device_serial" placeholder=""/>
-                  </div>
-                  <div class="row">
-                    <div class="form-group col-xs-6">
-                      <label for="device_types">Select Type</label>
-                      <select class="form-control" name="device_types">
-                        {% for type in types %}
-                          <option>{{ type }}</option>
-                        {% endfor %}
-                      <option>Other</option>
-                      </select>
-                    </div>
-                    <div class="form-group col-xs-6">
-                      <label for="other">If Other</label>
-                      <input type="text" class="form-control" name="other" placeholder=""/>
-                    </div> 
-                  </div>
-                  <div class="form-group">
-                      <label>Device Description</label>
-                      <textarea class="form-control" rows="3" name="device_desc"></textarea>
-                  </div>
-                  <div class="form-group">
-                      <label>Notes</label>
-                      <textarea class="form-control" rows="3" name="device_notes"></textarea>
-                  </div>
-                  <div class="form-group">
-                    <label for="device_state">Select State</label>
-                    <select class="form-control" name="device_state">
-                      {% for state in states %}
-                        <option>{{ state }}</option>
-                      {% endfor %}
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label for="file">Photo</label>
-                    <input type="file" name="file"/>
-                  </div>
-                  
-                  <div class="modal-footer">
-                    <button type="button" class="btn btn-default"
-                            data-dismiss="modal">
-                                Close
-                    </button>
-                    <button type="submit" class="btn btn-primary">
-                        Add Item
-                    </button>
-                  </div>
-                </form>
-                
-                
-            </div>
-            
-            <!-- Modal Footer -->
-            
-        </div>
-    </div>
-</div>
-
-{% block script %}
-
-<script>
-  $(document).ready(function() {
-      $('#ddataTables-example').DataTable({
-              responsive: true
-      });
-  });
-</script>
-
-{%endblock%}
-
-{%endblock%}
-
+{% block scripts %}{% endblock %}

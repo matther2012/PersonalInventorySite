@@ -1,6 +1,8 @@
 # Flask imports
-from flask import Flask, render_template, session, redirect, url_for, escape, request, jsonify
+from flask import Flask, render_template, session, redirect, url_for, escape, request
 from werkzeug import secure_filename
+import flask.ext.whooshalchemy
+
 # Peewee
 from peewee import *
 
@@ -11,91 +13,149 @@ import os.path
 
 # Custom support files
 import models
-#import adLDAP
+import adLDAP
 
-import flask.ext.whooshalchemy
-
+# Paramaters
+isDebugMode = True
 UPLOAD_FOLDER = 'static/item_photos'
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif', 'PNG', 'JPG', 'JPEG', 'GIF'])
 
-
-# Other
-#from datetime import date
-
 # ~~~~~~~~~~~~~~~~ Start Execution ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# Create Flask app
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-# ~~~~~~~~~~~~~~~~ Create Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# LDAP http://www.python-ldap.org/doc/html/installing.html
 
 # ~~~~~~~~~~~~~~~~ Startup Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 def init(isDebug):
 	app.debug = isDebug
-
 	# Generate secret key for session
 	app.secret_key = os.urandom(20)
-
+	
+def getIndexURL():
+	return redirect(url_for('index'))
+	
 # ~~~~~~~~~~~~~~~~ Page Render Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-def renderMainPage():
+def renderMainPage(serialNumber = '', itemType = 'ALL', state = 'ALL', status = 'All'):
+	# TODO filter results, set page form filters, and remove prints
+	print(serialNumber)
+	print(itemType)
+	print(state)
+	print(status)
+	
 	query = models.Device.select().order_by(models.Device.serialNumber)
 	types = models.getDeviceTypes()
 	states = models.getStates()
 	return render_template('index.html',
-			name=escape(session['displayName']),
 			query=query,
 			types=types,
 			states=states,
 			totalItems=len(query),
-			logoutURL=url_for('logout')
+			
+			name=escape(session['displayName']),
+			logoutURL=url_for('logout'),
+			indexURL=url_for('index'),
+			hasEditAccess=True
 		)
 
-@app.route('/')
+def renderEntry(function, serialNumber):
+	# TODO remake entry files
+	return getIndexURL()
+	hasEditAccess = session['hasEditAccess']
+	
+	formID = 'view'
+	entryType = 'View'
+	if function == 'view':
+		entryType = 'View'
+		if hasEditAccess:
+			formID = 'openEditting'
+	elif function == 'openEditting' and hasEditAccess:
+		entryType = 'Edit'
+		formID = 'saveInformation'
+	elif function == 'add' and hasEditAccess:
+		entryType = 'Edit'
+		formID = 'saveInformation'
+	
+	return render_template('entry' + entryType + '.html',
+			indexURL=url_for('index'),
+			logoutURL=url_for('logout'),
+			
+			formID=formID,
+			submitURL=url_for('index'),
+			hasEditAccess=hasEditAccess,
+			
+			serialNumber=serialNumber,
+			itemType='Type A',
+			description='This is a desc',
+			state='operational',
+			notes='this is a note',
+			photoName='IMG_9880.JPG'
+		)
+
+# ~~~~~~~~~~~~~~~~ Routing Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+@app.route('/', methods=['GET', 'POST'])
 def index():
 	# http://flask.pocoo.org/snippets/15/
-
+	
 	# If user logged in
 	if 'username' in session:
 		# Render main page
-		return renderMainPage()
-
+		if request.method == 'POST':
+			print(request.values)
+			if request.form['formID'] == 'filter':
+				return renderMainPage(
+								serialNumber = request.form['serialNumber'],
+								itemType = request.form['itemtype'],
+								state = request.form['state'],
+								status = request.form['status'])
+			elif request.form['formID'] == 'openEntry':
+				return renderEntry('view', request.form['serialNumber'])
+			elif request.form['formID'] == 'openEditting':
+				return renderEntry('openEditting', request.form['serialNumber'])
+			elif request.form['formID'] == 'saveInformation':
+				# TODO save information
+				return renderEntry('view', request.form['serialNumber'])
+		else:
+			return renderMainPage()
+	
 	# Force user to login
 	return redirect(url_for('login'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-	# If form has been submitted
-	if request.method == 'POST':
+	if 'username' in session:
+		return redirect(url_for('index'))
+	elif request.method == 'POST':
 		try:
-			if (app.debug == True or areCredentialsValid(
-					request.form['username'],
-					request.form['password']
-					)):
+			user = request.form['username']
+			pw = request.form['password']
+			valid, hasEditAccess = adLDAP.checkCredentials(user, pw)
+			if (app.debug == True or valid == True):
 				# Set username and displayName in session
-				session['username'] = request.form['username']
+				session['username'] = user
 				session['displayName'] = session['username']
+				session['hasEditAccess'] = hasEditAccess
+				
+				# Send user back to index page
+				# (if username wasnt set, it will redirect back to login screen)
+				return getIndexURL()
+				
 		except Exception as e:
 			return str(e)
-
-		try:
-			# Send user back to index page
-			# (if username wasnt set, it will redirect back to login screen)
-			return redirect(url_for('index'))
-		except Exception as e:
-			return str(e)
-
-	# Was not a POST, which means index or some other source sent user to login
-	return render_template('login.html')
+	else:
+		# Was not a POST, which means index or some other source sent user to login
+		return render_template('login.html')
 
 @app.route('/logout')
 def logout():
 	session.pop('username', None)
 	session.pop('displayName', None)
-	return redirect(url_for('index'))
+	session.pop('hasEditAccess', None)
+	return redirect(url_for('login'))
+	
+
+# ~~~~~~~~~~~~~~~~ New Functions: TODO sort ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 @app.route('/search', methods=['POST'])
 def search():
@@ -210,11 +270,10 @@ def updateItem(serial):
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
-
-
+	
 # ~~~~~~~~~~~~~~~~ Start page ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-init(True)
+init(isDebugMode)
 
 if __name__ == '__main__':
 	ctx = app.test_request_context()
@@ -248,5 +307,4 @@ if __name__ == '__main__':
 		issues = 'None of note'
 	)
 	
-
 	models.db.close()
