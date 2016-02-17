@@ -1,6 +1,6 @@
 # Flask imports
-from flask import Flask, render_template, session, redirect, url_for, escape, request
-
+from flask import Flask, render_template, session, redirect, url_for, escape, request, jsonify
+from werkzeug import secure_filename
 # Peewee
 from peewee import *
 
@@ -15,6 +15,8 @@ import models
 
 import flask.ext.whooshalchemy
 
+UPLOAD_FOLDER = 'static/item_photos'
+ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif', 'PNG', 'JPG', 'JPEG', 'GIF'])
 
 
 # Other
@@ -24,7 +26,7 @@ import flask.ext.whooshalchemy
 
 # Create Flask app
 app = Flask(__name__)
-
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # ~~~~~~~~~~~~~~~~ Create Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # LDAP http://www.python-ldap.org/doc/html/installing.html
@@ -40,17 +42,15 @@ def init(isDebug):
 # ~~~~~~~~~~~~~~~~ Page Render Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 def renderMainPage():
-	query = models.Device.select(models.Device.serialNumber,
-								 models.Device.typeCategory,
-								 models.Device.description,
-								 models.Device.issues,
-								 models.Device.state
-				).order_by(models.Device.idNumber)
+	query = models.Device.select().order_by(models.Device.serialNumber)
 	types = models.getDeviceTypes()
+	states = models.getStates()
 	return render_template('index.html',
 			name=escape(session['displayName']),
 			query=query,
 			types=types,
+			states=states,
+			totalItems=len(query),
 			logoutURL=url_for('logout')
 		)
 
@@ -101,8 +101,10 @@ def logout():
 def search():
 	if request.method == 'POST':
 		search = request.form['searchField']
-
-	return redirect(url_for('search_results', search=search))
+	if search != "":
+		return redirect(url_for('search_results', search=search))
+	else:
+		return redirect(url_for('index'))
 
 
 
@@ -115,13 +117,9 @@ def search_results(search):
 								 models.Device.description,
 								 models.Device.issues,
 								 models.Device.state
-								 ).where(
-								 (models.Device.serialNumber ** search) |
-								 (models.Device.typeCategory ** search) |
-								 (models.Device.description ** search) |
-								 (models.Device.issues ** search) |
-								 (models.Device.state ** search)
-								 ).order_by(models.Device.serialNumber)
+								 ).where(models.Device.serialNumber.contains(search) | 
+								 		 models.Device.typeCategory.contains(search) |
+								 		 models.Device.description.contains(search)).order_by(models.Device.serialNumber)
 
 	types = models.getDeviceTypes()
 	return render_template('searchResults.html',
@@ -129,6 +127,55 @@ def search_results(search):
 			types=types,
 			logoutURL=url_for('logout')
 		)
+		
+@app.route('/viewItem/<serial>')
+def viewItem(serial):
+	item = models.Device.select().where(models.Device.serialNumber == serial)
+	return render_template('viewItem.html',
+			item=item,
+			logoutURL=url_for('logout')
+		)
+		
+@app.route('/', methods=['POST'])
+def addItem():
+	if request.method == 'POST':
+		
+		idNum = models.Device.select().order_by(models.Device.idNumber.desc()).get()
+		
+		if request.form['device_types'] == 'Other':
+			device_type = request.form['other']
+		else:
+			device_type = request.form['device_types']
+			
+		file = request.files['file']
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+			
+	models.Device.create(
+			idNumber = idNum.idNumber + 1,
+			serialNumber = request.form['lcdi_serial'],
+			typeCategory = device_type,
+			description = request.form['device_desc'],
+			issues = request.form['device_notes'],
+			photo = file.filename,
+			state = request.form['device_state']
+		)
+		
+	return redirect(url_for('index'))
+	
+@app.route('/deleteItem/<serial>')
+def deleteItem(serial):
+	
+	item = models.Device.select().where(models.Device.serialNumber == serial).get();
+	item.delete_instance();
+	return redirect(url_for('index'))
+	
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
+
 
 # ~~~~~~~~~~~~~~~~ Start page ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -143,15 +190,28 @@ if __name__ == '__main__':
 	app.run(port=port, host=host)
 
 	models.db.connect()
-
+	
+	"""models.Device.create_table()
+	models.InOut.create_table()"""
+	
 	models.Device.create(
-		idNumber = 3,
-		serialNumber = 'LCDI-0111',
-		typeCategory = 'Tablet',
-		description = 'This is a phone This is a phone This is a phone This is a phone',
+		idNumber = 2,
+		serialNumber = 'LCDI-1111',
+		typeCategory = 'Phone',
+		description = 'iPhone 6 Plus',
 		issues = 'None of note',
-		photo = 'IMG_002.jpg',
-		state = 'operational'
+		photo = 'IMG_001.png',
+		state = 'Operational'
 	)
+	
+	models.InOut.create(
+		idNumber = 2,
+		studentName = 'Matthew Fortier',
+		use = 'iOS Forensics',
+		userIn = 'N/A',
+		userOut = 'mfortier',
+		issues = 'None of note'
+	)
+	
 
 	models.db.close()

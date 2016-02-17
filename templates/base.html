@@ -9,7 +9,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>SB Admin 2 - Bootstrap Admin Theme</title>
+    <title>LCDI Inventory</title>
 
     {% block styles %}
 
@@ -59,7 +59,7 @@
                   <span class="icon-bar"></span>
               </button>
               <!--<a class="navbar-brand" href="index.html">SB Admin v2.0</a> -->
-              <img src="{{ url_for('static', filename='lcdi_logo.png')}}" alt="LCDI Logo Goes Here" style="width: 250px; height:auto; padding: 10px;">
+              <a href="http://homepage.lcdi/"><img src="{{ url_for('static', filename='lcdi_logo.png')}}" alt="LCDI Logo Goes Here" style="width: 250px; height:auto; padding: 10px;"></a>
           </div>
           <!-- /.navbar-header -->
 
@@ -104,6 +104,9 @@
                       </li>
                       <li>
                           <a href="tables.html"><i class="fa fa-table fa-fw"></i> Tables</a>
+                      </li>
+                      <li>
+                          <a href="" data-toggle="modal" data-target="#addItemModal"><i class="fa fa-edit fa-fw"></i> Add Item</a>
                       </li>
                   </ul>
               </div>
