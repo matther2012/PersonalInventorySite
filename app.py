@@ -58,6 +58,40 @@ def renderMainPage(serialNumber = '', itemType = 'ALL', state = 'ALL', status = 
 			hasEditAccess=True
 		)
 
+def renderEntry(function, serialNumber):
+	# TODO remake entry files
+	return getIndexURL()
+	hasEditAccess = session['hasEditAccess']
+	
+	formID = 'view'
+	entryType = 'View'
+	if function == 'view':
+		entryType = 'View'
+		if hasEditAccess:
+			formID = 'openEditting'
+	elif function == 'openEditting' and hasEditAccess:
+		entryType = 'Edit'
+		formID = 'saveInformation'
+	elif function == 'add' and hasEditAccess:
+		entryType = 'Edit'
+		formID = 'saveInformation'
+	
+	return render_template('entry' + entryType + '.html',
+			indexURL=url_for('index'),
+			logoutURL=url_for('logout'),
+			
+			formID=formID,
+			submitURL=url_for('index'),
+			hasEditAccess=hasEditAccess,
+			
+			serialNumber=serialNumber,
+			itemType='Type A',
+			description='This is a desc',
+			state='operational',
+			notes='this is a note',
+			photoName='IMG_9880.JPG'
+		)
+
 # ~~~~~~~~~~~~~~~~ Routing Functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 @app.route('/', methods=['GET', 'POST'])
