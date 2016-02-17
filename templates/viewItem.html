@@ -15,35 +15,62 @@ Inventory
             </div>
             <div class="panel-body">
                 <div class="col-lg-6">
-                  <div class="panel panel-yellow">
-                    <div class="panel-heading">
-                        <h4>Info</h4>
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            Device Info
+                        </div>
+                        <div class="panel-body">
+                            <div class="well" style="display: flex; justify-content: flex-start;">
+                                <div>
+                                    <img src="{{ url_for('static', filename='item_photos/' + item[0].photo) }}" alt = "Item-Photo" style="width: 250px; height: 250px;">                            
+                                </div>
+                                <div style="padding-left: 20px;">
+                                    <h4><b>Device Serial Number:</b> {{ item[0].serialNumber}} </h4>
+                                    <h4><b>Device Type:</b> {{ item[0].typeCategory}} </h4>
+                                    <h4><b>State:</b> {{ item[0].state}} </h4>
+                                    <h4><b>Description:</b></h4>
+                                    <div class="well well-sm" style="background: rgb(255,255,255);">
+                                        <p>{{ item[0].description}}</p>    
+                                    </div>
+                                    <h4><b>Notes:</b></h4>
+                                    <div class="well well-sm" style="background: rgb(255,255,255);">
+                                        <p>{{ item[0].issues}}</p>    
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button type="button" class="btn btn-warning" data-toggle="modal" data-target="#editItemModal"><span class="glyphicon glyphicon-cog" aria-hidden="true"></span>  Edit Item</button>
+                            <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#deleteModal"><span class="glyphicon glyphicon-remove" aria-hidden="true"></span>  Delete Item</button>
+                        </div>
                     </div>
-                    <div class="panel-body">
-                      <img src="{{ url_for('static', filename='item_photos/' + item[0].photo) }}" alt = "Item-Photo" style="width: 250px; height: 250px;">
-                    </div>
-                    <div class="panel-footer">
-                        Panel Footer
-                    </div>
-                  </div>
                 </div>
-              
-              <div class="col-lg-6">
-                  <div class="panel panel-yellow">
-                    <div class="panel-heading">
-                        <h4>History</h4>
+                <div class="col-lg-6">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            History
+                        </div>
+                        <div class="panel-body">
+                            <div class="dataTable_wrapper">
+                      <table width="100%" class="table table-striped table-bordered table-hover" id="dataTables-example">
+                        <thead>
+                          <tr>
+                              <th>Date In</th>
+                              <th>Date Out</th>
+                              <th>User In</th>
+                              <th>User Out</th>
+                              <th>Out To</th>
+                              <th>Use</th>
+                          </tr>
+                        </thead>
+                        <tbody></tbody>
+
+                        </tbody>
+                      </table>
                     </div>
-                    <div class="panel-body">
+                  <!-- /.table-responsive -->
+                        </div>
                     </div>
-                    <div class="panel-footer">
-                        Panel Footer
-                    </div>
-                  </div>
-              </div>
-            </div>
-            <div class="panel-footer">
-                <a href="{{ url_for('deleteItem', serial=item[0].serialNumber) }}"><button type="button" class="btn btn-danger">Delete Item</button></a>
-            </div>
+                </div>
         </div>
       </div>
       
@@ -51,8 +78,8 @@ Inventory
   </div>
   <!-- /.row -->
   
-  <!-- add item modal -->
-  <div class="modal fade" id="addItemModal" tabindex="-1" role="dialog" 
+  <!-- edit item modal -->
+  <div class="modal fade" id="editItemModal" tabindex="-1" role="dialog" 
      aria-labelledby="myModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -64,28 +91,29 @@ Inventory
                        <span class="sr-only">Close</span>
                 </button>
                 <h4 class="modal-title" id="myModalLabel">
-                    Add Item
+                    Edit Item
                 </h4>
             </div>
             
             <!-- Modal Body -->
             <div class="modal-body">
                 
-                <form role="form" method="post">
+                <form action="{{ url_for('updateItem', serial=item[0].serialNumber) }}" method="POST" enctype="multipart/form-data">
                   <div class="form-group">
                     <label for="lcdi_serial">LCDI Serial Number</label>
                       <input type="text" class="form-control"
-                      id="lcdi_serial" placeholder="ex. LCDI-0000"/>
+                      name="lcdi_serial" value="{{ item[0].serialNumber }}"/>
                   </div>
                   <div class="form-group">
                     <label for="device_serial">Device Serial Number</label>
                       <input type="text" class="form-control"
-                          id="device_serial" placeholder=""/>
+                          name="device_serial" />
                   </div>
                   <div class="row">
                     <div class="form-group col-xs-6">
                       <label for="device_types">Select Type</label>
-                      <select class="form-control" id="device_types">
+                      <select class="form-control" name="device_types">
+                          <option>{{ item[0].typeCategory }}</option>
                         {% for type in types %}
                           <option>{{ type }}</option>
                         {% endfor %}
@@ -94,20 +122,21 @@ Inventory
                     </div>
                     <div class="form-group col-xs-6">
                       <label for="other">If Other</label>
-                      <input type="text" class="form-control" id="other" placeholder=""/>
+                      <input type="text" class="form-control" name="other" placeholder=""/>
                     </div> 
                   </div>
                   <div class="form-group">
                       <label>Device Description</label>
-                      <textarea class="form-control" rows="3" id="device_desc"></textarea>
+                      <textarea class="form-control" rows="3" name="device_desc">{{ item[0].description }}</textarea>
                   </div>
                   <div class="form-group">
                       <label>Notes</label>
-                      <textarea class="form-control" rows="3" id="device_notes"></textarea>
+                      <textarea class="form-control" rows="3" name="device_notes" >{{ item[0].issues }}</textarea>
                   </div>
                   <div class="form-group">
                     <label for="device_state">Select Type</label>
-                    <select class="form-control" id="device_state">
+                    <select class="form-control" name="device_state">
+                        <option>{{ item[0].state }}</option>
                       {% for state in states %}
                         <option>{{ state }}</option>
                       {% endfor %}
@@ -115,66 +144,49 @@ Inventory
                   </div>
                   <div class="form-group">
                       <label>Add Photo</label>
-                      <input type="file">
+                      <input type="file" name="file">
                   </div>
+                  
+                   <!-- Modal Footer -->
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default"
+                                data-dismiss="modal">
+                                    Close
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                         Edit Item
+                        </button>
+                    </div>
                 </form>
                 
                 
             </div>
             
-            <!-- Modal Footer -->
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default"
-                        data-dismiss="modal">
-                            Close
-                </button>
-                <button type="button" class="btn btn-primary">
-                    Add Item
-                </button>
-            </div>
         </div>
     </div>
 </div>
 
-<!-- add item modal -->
-  <div class="modal fade" id="viewItemModal" tabindex="-1" role="dialog" 
-     aria-labelledby="myModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <!-- Modal Header -->
-            <div class="modal-header">
-                <button type="button" class="close" 
-                   data-dismiss="modal">
-                       <span aria-hidden="true">&times;</span>
-                       <span class="sr-only">Close</span>
-                </button>
-                <h4 class="modal-title" id="myModalLabel">
-                    Add Item
-                </h4>
+<!-- Modal -->
+  <div class="modal fade" id="deleteModal" role="dialog">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+          <div class="panel panel-red">
+            <div class="panel-heading">
+                Confirm Delete?
             </div>
-            
-            <!-- Modal Body -->
-            <div class="modal-body">
-                
-                {% if item %}
-                <h1>Serial Number: {{ item.serialNumber }}</h1>
-                {% endif %}
-                
-            </div>
-            
-            <!-- Modal Footer -->
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default"
-                        data-dismiss="modal">
-                            Close
-                </button>
-                <button type="button" class="btn btn-primary">
-                    Add Item
+            <div class="panel-body">
+                <p>Are You Sure?</p>
+                <a href="{{ url_for('deleteItem', serial=item[0].serialNumber) }}"><button type="button" class="btn btn-success"><span class="glyphicon glyphicon-ok" aria-hidden="true"></span>  Yes</button></a>
+                <button type="button" class="btn btn-danger" data-dismiss="modal">
+                    <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>  No
                 </button>
             </div>
         </div>
+      </div>
     </div>
-</div>
+  </div>
+
+
 
 {%endblock%}
 
