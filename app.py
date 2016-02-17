@@ -131,8 +131,12 @@ def search_results(search):
 @app.route('/viewItem/<serial>')
 def viewItem(serial):
 	item = models.Device.select().where(models.Device.serialNumber == serial)
+	types = models.getDeviceTypes()
+	states = models.getStates()
 	return render_template('viewItem.html',
 			item=item,
+			types=types,
+			states=states,
 			logoutURL=url_for('logout')
 		)
 		
@@ -162,7 +166,7 @@ def addItem():
 			state = request.form['device_state']
 		)
 		
-	return redirect(url_for('index'))
+	return redirect(url_for('viewItem', serial=request.form['lcdi_serial']))
 	
 @app.route('/deleteItem/<serial>')
 def deleteItem(serial):
@@ -170,6 +174,37 @@ def deleteItem(serial):
 	item = models.Device.select().where(models.Device.serialNumber == serial).get();
 	item.delete_instance();
 	return redirect(url_for('index'))
+	
+@app.route('/updateItem/<serial>', methods=['POST'])
+def updateItem(serial):
+	
+	if request.method == 'POST':
+		
+		item = models.Device.select().where(models.Device.serialNumber == serial).get()
+		
+		if request.form['device_types'] == 'Other':
+			device_type = request.form['other']
+		else:
+			device_type = request.form['device_types']
+			
+			
+		file = request.files['file']
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+			
+			
+	item.serialNumber = request.form['lcdi_serial']
+	item.typeCategory = device_type
+	item.description = request.form['device_desc']
+	item.issues = request.form['device_notes']
+	if file:
+		item.photo = file.filename
+	item.state = request.form['device_state']
+	
+	item.save()
+	
+	return redirect(url_for('viewItem', serial=item.serialNumber))
 	
 
 def allowed_file(filename):
