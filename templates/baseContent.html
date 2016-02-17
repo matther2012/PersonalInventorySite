@@ -83,7 +83,26 @@
 		</nav>
 	</div>
 
-	{% block content %}{% endblock %}
+	<div id="page-wrapper" style="padding-top: 27px;">
+		<div class="row">
+			
+			<!-- Start: Header -->
+			<div class="col-lg-12">
+				<div class="jumbotron">
+					{% block header %}{% endblock %}
+				</div>
+			</div>
+			<!-- End: Header -->
+			
+	
+			<div class="col-lg-12">
+				<div class="panel panel-primary">
+					{% block content %}{% endblock %}
+				</div>
+			</div>
+			
+		</div>
+	</div>
 	
 	<!-- Start: Modal View; addItemModal -->
 	<div class="modal fade" id="addItemModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
@@ -164,6 +183,7 @@
 			</div>
 		</div>
 	</div>
+	{% block modals %}{% endblock %}
 	<!-- End: Modal View; addItemModal -->
 
 {% endblock %}
@@ -192,6 +212,12 @@
 	<script src="{{ url_for('static', filename='js/dataTables.responsive.min.js') }}"></script>
 	<script src="{{ url_for('static', filename='js/responsive.bootstrap.min.js') }}"></script>
 	
-	
 	{% block scripts %}{% endblock %}
+	<script>
+		$(document).ready(function() {
+			$('#ddataTables-example').DataTable({
+				responsive: true
+			});
+		});
+	</script>
 {% endblock %}
